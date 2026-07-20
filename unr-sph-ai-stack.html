@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Content Studio Stack | UNR School of Public Health</title>
+<style>
+  :root{
+    --bg:#F7F6F2; --bg2:#FFFFFF; --ink:#152A40; --muted:#5B6B7C;
+    --teal:#0E7C80; --tealsoft:#E3F2F2; --gold:#B07000; --goldsoft:#FBF3E2;
+    --green:#1E7A46; --greensoft:#E4F3EA; --amber:#9A6200; --ambersoft:#FAF0DD;
+    --card:#FFFFFF; --line:#E2E0D8; --shadow:0 10px 30px -18px rgba(21,42,64,.25);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); overflow:hidden;-webkit-font-smoothing:antialiased;
+  }
+  #deck{height:100vh;width:100vw;position:relative}
+  .slide{
+    position:absolute;inset:0;opacity:0;pointer-events:none;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:5vh 7vw;transition:opacity .5s ease, transform .5s ease;
+    transform:translateY(14px);overflow-y:auto;
+  }
+  .slide.active{opacity:1;pointer-events:auto;transform:translateY(0)}
+  .slide::-webkit-scrollbar{width:6px}
+  .slide::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+  .kicker{color:var(--teal);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:.72rem;margin-bottom:14px}
+  h1{font-size:clamp(1.9rem,4.6vw,3.4rem);line-height:1.08;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+  h2{font-size:clamp(1.5rem,3.4vw,2.4rem);line-height:1.12;font-weight:800;letter-spacing:-.01em;margin-bottom:8px}
+  h3{font-size:1.05rem;font-weight:700}
+  p{color:var(--muted);font-size:clamp(.95rem,1.4vw,1.12rem);line-height:1.6;max-width:62ch}
+  .lead{color:var(--ink)}
+  a{color:var(--teal);text-decoration:none;border-bottom:1px solid rgba(14,124,128,.35)}
+  a:hover{border-color:var(--teal)}
+  .accent{color:var(--gold)} .tealx{color:var(--teal)}
+  .pill{display:inline-block;padding:5px 12px;border:1px solid var(--line);background:var(--bg2);border-radius:999px;font-size:.72rem;color:var(--muted);margin:4px 6px 4px 0;letter-spacing:.03em}
+  .grid{display:grid;gap:16px;margin-top:22px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+  .card h3{margin-bottom:6px}
+  .card p{font-size:.9rem;line-height:1.5}
+  .tag{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 9px;border-radius:6px;display:inline-block}
+  .t-free{background:var(--greensoft);color:var(--green)}
+  .t-core{background:var(--goldsoft);color:var(--gold)}
+  .t-opt{background:var(--ambersoft);color:var(--amber)}
+  .ease{display:inline-flex;gap:3px;vertical-align:middle}
+  .dot{width:9px;height:9px;border-radius:50%;background:#DDE3E8}
+  .dot.on{background:var(--teal)}
+  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:.9rem}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;font-size:.74rem;text-transform:uppercase;letter-spacing:.06em}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink)}
+  tr.total td{border-top:2px solid var(--teal);border-bottom:none;font-weight:800;color:var(--ink);font-size:1rem}
+  .costcol{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;position:relative;box-shadow:var(--shadow)}
+  .costcol.reco{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal), 0 18px 40px -20px rgba(14,124,128,.35)}
+  .badge{position:absolute;top:-11px;left:22px;background:var(--teal);color:#fff;font-size:.64rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:6px}
+  .big{font-size:2.1rem;font-weight:800;color:var(--ink);letter-spacing:-.01em}
+  .big span{font-size:.9rem;color:var(--muted);font-weight:500}
+  .li{display:flex;gap:9px;align-items:flex-start;margin:7px 0;font-size:.86rem;color:var(--muted);line-height:1.45}
+  .li b{color:var(--ink);font-weight:600}
+  .chk{color:var(--teal);flex-shrink:0;margin-top:2px;font-weight:700}
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;background:var(--teal);color:#fff;
+    font-weight:700;font-size:.92rem;padding:12px 22px;border-radius:12px;border:none;cursor:pointer;
+    text-decoration:none;box-shadow:0 8px 20px -8px rgba(14,124,128,.5);transition:transform .15s, box-shadow .15s;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 12px 24px -8px rgba(14,124,128,.55);border-bottom:none}
+  .btn.small{padding:8px 14px;font-size:.78rem;border-radius:9px}
+  .btn .ext{font-size:.8em;opacity:.85}
+  .flow{display:flex;align-items:stretch;gap:0;margin-top:22px;flex-wrap:wrap}
+  .step{flex:1;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px;position:relative;opacity:.25;transform:translateY(6px);box-shadow:var(--shadow)}
+  .slide.active .step{animation:rise .6s forwards}
+  .slide.active .step:nth-child(1){animation-delay:.15s}
+  .slide.active .step:nth-child(3){animation-delay:.55s}
+  .slide.active .step:nth-child(5){animation-delay:.95s}
+  .slide.active .step:nth-child(7){animation-delay:1.35s}
+  .slide.active .step:nth-child(9){animation-delay:1.75s}
+  @keyframes rise{to{opacity:1;transform:translateY(0)}}
+  .arrow{display:flex;align-items:center;justify-content:center;width:34px;color:var(--teal);font-size:1.3rem;flex:0 0 auto;opacity:.2}
+  .slide.active .arrow{animation:rise .5s forwards}
+  .slide.active .arrow:nth-child(2){animation-delay:.4s}
+  .slide.active .arrow:nth-child(4){animation-delay:.8s}
+  .slide.active .arrow:nth-child(6){animation-delay:1.2s}
+  .slide.active .arrow:nth-child(8){animation-delay:1.6s}
+  .step .n{font-size:.66rem;color:var(--teal);font-weight:700;letter-spacing:.08em}
+  .step h4{font-size:.94rem;margin:5px 0 4px}
+  .step small{color:var(--muted);font-size:.76rem;line-height:1.4;display:block}
+  .step .tool{margin-top:8px;font-size:.7rem;color:var(--gold);font-weight:600}
+  #nav{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;z-index:20;
+    background:rgba(255,255,255,.85);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:999px;padding:8px 14px;box-shadow:var(--shadow)}
+  .navbtn{background:none;border:none;color:var(--ink);cursor:pointer;font-size:1.1rem;padding:4px 8px;border-radius:8px;opacity:.8}
+  .navbtn:hover{opacity:1;background:var(--bg)}
+  #dots{display:flex;gap:7px}
+  .nd{width:7px;height:7px;border-radius:50%;background:#CDD5DC;cursor:pointer;transition:all .3s}
+  .nd.on{background:var(--teal);width:22px;border-radius:4px}
+  #counter{position:fixed;top:20px;right:26px;color:var(--muted);font-size:.78rem;letter-spacing:.08em;z-index:20;font-variant-numeric:tabular-nums}
+  #brand{position:fixed;top:20px;left:26px;color:var(--muted);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;z-index:20}
+  .flag{border-left:3px solid var(--gold);background:var(--goldsoft);padding:13px 18px;border-radius:0 12px 12px 0;margin-top:16px}
+  .flag p{color:var(--ink);font-size:.9rem}
+  .flag.good{border-left-color:var(--green);background:var(--greensoft)}
+  .two{display:grid;grid-template-columns:1.1fr .9fr;gap:34px;align-items:center}
+  .foot{margin-top:auto;padding-top:20px;color:var(--muted);font-size:.72rem}
+  .slide.centered{align-items:center;text-align:center}
+  .slide.centered .inner{margin:auto;max-width:900px;display:flex;flex-direction:column;align-items:center}
+  .slide.centered p{margin-left:auto;margin-right:auto}
+  .slide.centered .foot{margin-top:34px;padding-top:0}
+  @media(max-width:820px){
+    .g2,.g3,.two{grid-template-columns:1fr}
+    .slide{padding:8vh 7vw 12vh}
+    .arrow{display:none}
+    .flow{flex-direction:column}
+    #counter,#brand{font-size:.64rem;max-width:40vw}
+  }
+</style>
+</head>
+<body>
+<div id="brand">Prepared by Bianca D. McCall, M.A.</div>
+<div id="counter"></div>
+<div id="deck">
+
+  <!-- 1 TITLE -->
+  <section class="slide active centered">
+    <div class="inner">
+      <div class="kicker">AI Content Studio &middot; Tech Stack Consultation</div>
+      <h1>A beginner friendly AI studio for<br><span class="accent">behavioral health</span> workforce training.</h1>
+      <p style="margin-top:22px" class="lead">A conservative, compliance first tech stack for the University of Nevada, Reno School of Public Health. Chosen to help a small team produce micro-learning videos, infographics, and resource kits that OUD treatment agencies and paraprofessionals can actually digest, and use to deliver technical assistance.</p>
+      <div style="margin-top:24px">
+        <span class="pill">5 to 10 person team</span>
+        <span class="pill">Micro-learning &amp; resource kits</span>
+        <span class="pill">OUD workforce &amp; TA</span>
+        <span class="pill">Narrow learning curve</span>
+      </div>
+      <div class="foot">Pricing verified July 2026, list prices in USD, confirm at purchase. Use the arrow keys or the controls below to move through the deck.</div>
+    </div>
+  </section>
+
+  <!-- 2 USE CASE -->
+  <section class="slide">
+    <div class="kicker">What this stack is for</div>
+    <h2>The job to be done</h2>
+    <p>This is not a general office AI rollout. It is a small production studio. The team takes dense clinical and federal guidance on opioid use disorder and turns it into training people will finish and remember.</p>
+    <div class="grid g2">
+      <div class="card">
+        <h3 class="tealx">What the team makes</h3>
+        <div class="li"><span class="chk">&#9679;</span><span><b>Micro-learning videos.</b> Short, captioned, plain language training modules.</span></div>
+        <div class="li"><span class="chk">&#9679;</span><span><b>Infographics.</b> One look explainers of protocols, screening, and workflows.</span></div>
+        <div class="li"><span class="chk">&#9679;</span><span><b>Resource kits.</b> Job aids, quick reference sheets, and facilitator guides.</span></div>
+      </div>
+      <div class="card">
+        <h3 class="tealx">Who it serves</h3>
+        <div class="li"><span class="chk">&#9679;</span><span><b>OUD treatment agencies</b> that need staff trained quickly and consistently.</span></div>
+        <div class="li"><span class="chk">&#9679;</span><span><b>Paraprofessionals and peers</b> who learn best from short, visual, digestible content.</span></div>
+        <div class="li"><span class="chk">&#9679;</span><span><b>Technical assistance</b> providers who reuse these assets in the field.</span></div>
+      </div>
+    </div>
+    <div class="flag"><p>Because the deliverables are visual and video first, the creative and authoring tools are the core of this stack, not an afterthought. That shapes every recommendation that follows.</p></div>
+  </section>
+
+  <!-- 3 TL;DR -->
+  <section class="slide">
+    <div class="kicker">The 60 second version</div>
+    <h2>What to put in the budget</h2>
+    <p>Buy a few production seats, not a license for everyone. A two to four person production core makes the assets. Everyone else reviews and uses them with free tools.</p>
+    <div class="grid g3">
+      <div class="card">
+        <span class="tag t-free">Start free</span>
+        <h3 style="margin-top:12px">Foundation</h3>
+        <p>Microsoft Copilot Chat plus NotebookLM Pro, free with university accounts. Distill source material and draft, at zero cost.</p>
+      </div>
+      <div class="card" style="border-color:var(--teal)">
+        <span class="tag t-core">Production core</span>
+        <h3 style="margin-top:12px">Make the assets</h3>
+        <p>Synthesia for training videos, Nano Banana and Canva for infographics and kits, Claude for scripts and facilitator guides.</p>
+      </div>
+      <div class="card">
+        <span class="tag t-opt">Add if needed</span>
+        <h3 style="margin-top:12px">Cinematic reach</h3>
+        <p>Higgsfield and Seedance for motion, b roll, and social promos. One shared seat covers the team.</p>
+      </div>
+    </div>
+    <div class="flag good"><p><b>Recommended annual target:</b> roughly <span class="tealx">$2,600 per year</span> for a balanced production studio, and under <span class="tealx">$1,000 per year</span> if you stay lean. NotebookLM Pro comes free with university email, full breakdown on the cost slide.</p></div>
+  </section>
+
+  <!-- 4 CRITICAL CONTEXT -->
+  <section class="slide">
+    <div class="kicker">Read this first</div>
+    <h2>Two facts about UNR that shape the plan</h2>
+    <div class="grid g2">
+      <div class="card">
+        <h3 class="accent">1. UNR is a Microsoft campus, not Google</h3>
+        <p>UNR moved email and core productivity from Google to Microsoft 365 in 2024, citing security. OIT officially recommends <b style="color:var(--ink)">Microsoft Copilot</b>. That makes Copilot Chat your no cost, no friction starting point for drafting and Q and A, because it already lives inside your protected tenant.</p>
+      </div>
+      <div class="card">
+        <h3 class="accent">2. There is an AI policy with real guardrails</h3>
+        <p>UNR holds no formal AI vendor contracts. Any new paid AI tool must pass an <b style="color:var(--ink)">OIT vendor risk assessment</b> first, and no regulated data may enter consumer AI tools. Training content is low risk, but OUD work carries HIPAA and 42 CFR Part 2 duties, so real patient data stays out.</p>
+      </div>
+    </div>
+    <div class="flag"><p><b>Why this helps the budget:</b> the everyday tool UNR already blesses is free, and every paid tool here is used only on training content, never on protected records. That keeps cost and compliance risk low. Reference: <a href="https://www.unr.edu/oit/policies/artificial-intelligence-policy" target="_blank">UNR OIT AI Usage Policy</a>.</p></div>
+  </section>
+
+  <!-- 5 PRINCIPLES -->
+  <section class="slide">
+    <div class="kicker">How the stack was chosen</div>
+    <h2>Six rules for a novice production team</h2>
+    <div class="grid g2" style="margin-top:12px">
+      <div class="li"><span class="chk">&#10003;</span><span><b>Compliance first.</b> Start with what OIT approves, keep HIPAA and 42 CFR Part 2 data out of consumer tools.</span></div>
+      <div class="li"><span class="chk">&#10003;</span><span><b>Template driven.</b> Favor tools where a beginner starts from a template, not a blank page.</span></div>
+      <div class="li"><span class="chk">&#10003;</span><span><b>Free before paid.</b> Prove value on no cost tiers, then buy seats only where production demands it.</span></div>
+      <div class="li"><span class="chk">&#10003;</span><span><b>Pool, do not spray.</b> Share creative seats across the team instead of licensing everyone.</span></div>
+      <div class="li"><span class="chk">&#10003;</span><span><b>Accessibility built in.</b> Captions and plain language by default, because the audience needs it.</span></div>
+      <div class="li"><span class="chk">&#10003;</span><span><b>Annual billing.</b> Where a tool earns its place, annual plans cut 15 to 38 percent off monthly.</span></div>
+    </div>
+    <div class="flag"><p>The goal is the stack a beginner team will still be using in six months, producing real assets, at a cost the school can renew without a fight.</p></div>
+  </section>
+
+  <!-- 6 THE STACK -->
+  <section class="slide">
+    <div class="kicker">The recommended stack</div>
+    <h2>Three layers, built around production</h2>
+    <div class="grid g3">
+      <div class="card">
+        <span class="tag t-free">Layer 1 &middot; Free</span>
+        <h3 style="margin-top:12px">Distill &amp; draft</h3>
+        <div class="li"><span class="chk">&#10003;</span><span><b>Copilot Chat</b>, drafting and Q and A, free with M365.</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span><b>NotebookLM Pro</b>, free with university email, turns dense guidance into plain summaries and audio overviews.</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span><b>Synthesia free</b>, 10 video minutes a month to test.</span></div>
+      </div>
+      <div class="card" style="border-color:var(--teal)">
+        <span class="tag t-core">Layer 2 &middot; Production core</span>
+        <h3 style="margin-top:12px">Make the assets</h3>
+        <div class="li"><span class="chk">&#10003;</span><span><b>Synthesia</b>, captioned avatar training videos in minutes.</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span><b>Claude (Cowork)</b>, scripts, facilitator guides, resource kits.</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span><b>Nano Banana</b>, infographic art via the free education Google AI access.</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span><b>Canva Pro</b>, lay out kits, one pagers, and slides.</span></div>
+      </div>
+      <div class="card">
+        <span class="tag t-opt">Layer 3 &middot; Optional</span>
+        <h3 style="margin-top:12px">Cinematic &amp; reach</h3>
+        <div class="li"><span class="chk">&#10003;</span><span><b>Higgsfield</b>, motion, b roll, social promos.</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span><b>Seedance</b>, longer AI video clips.</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span><b>Jasper</b>, only if a marketing role emerges.</span></div>
+      </div>
+    </div>
+    <div class="foot">Nano Banana is Google's image model, included with the education Google AI access. Synthesia is purpose built for training video with captions and 80 plus language dubbing, which is why it leads the video layer over cinematic tools.</div>
+  </section>
+
+  <!-- 7 ANIMATED WORKFLOW -->
+  <section class="slide">
+    <div class="kicker">A day in the life</div>
+    <h2>Building one micro-learning module</h2>
+    <p>For example, a 4 minute module on naloxone administration for new peer staff.</p>
+    <div class="flow">
+      <div class="step">
+        <div class="n">STEP 1</div>
+        <h4>Distill</h4>
+        <small>Drop the SAMHSA and clinical guidance in, get a plain language summary and key points.</small>
+        <div class="tool">NotebookLM</div>
+      </div>
+      <div class="arrow">&#8594;</div>
+      <div class="step">
+        <div class="n">STEP 2</div>
+        <h4>Script</h4>
+        <small>Turn the summary into a tight, beginner friendly module script and quiz.</small>
+        <div class="tool">Claude &middot; Copilot</div>
+      </div>
+      <div class="arrow">&#8594;</div>
+      <div class="step">
+        <div class="n">STEP 3</div>
+        <h4>Produce video</h4>
+        <small>Paste the script, pick a presenter, get a captioned training video.</small>
+        <div class="tool">Synthesia</div>
+      </div>
+      <div class="arrow">&#8594;</div>
+      <div class="step">
+        <div class="n">STEP 4</div>
+        <h4>Design assets</h4>
+        <small>Generate an infographic and a one page job aid to match.</small>
+        <div class="tool">Nano Banana &middot; Canva</div>
+      </div>
+      <div class="arrow">&#8594;</div>
+      <div class="step">
+        <div class="n">STEP 5</div>
+        <h4>Package kit</h4>
+        <small>Bundle video, infographic, and guide into a shareable resource kit.</small>
+        <div class="tool">Canva &middot; Claude</div>
+      </div>
+    </div>
+    <div class="flag"><p>No single person needs every tool. One person distills and scripts, one produces video and design. That is why the paid seats are few and mostly shared.</p></div>
+  </section>
+
+  <!-- 8 NOTEBOOKLM SPOTLIGHT + DEMO BUTTON -->
+  <section class="slide">
+    <div class="two">
+      <div>
+        <div class="kicker">Spotlight &middot; live demo</div>
+        <h2>NotebookLM Pro, free with your university email</h2>
+        <p>Sign in with a university Google account and upgrade to the Pro plan at no cost. Confirmed working with a UNR email in July 2026.</p>
+        <p style="margin-top:14px">Pro raises the limits where a training team feels them: <b class="lead">500 notebooks</b>, <b class="lead">300 sources per notebook</b>, <b class="lead">500 daily chat queries</b>, and <b class="lead">20 daily audio and video overviews</b>. That is enough to hold an entire OUD curriculum library in one place.</p>
+        <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap">
+          <a class="btn" href="https://notebooklm.google.com" target="_blank" rel="noopener">Open NotebookLM <span class="ext">&#8599;</span></a>
+          <a class="btn small" style="background:var(--bg2);color:var(--teal);border:1px solid var(--teal);box-shadow:none" href="https://support.google.com/notebooklm/answer/16337734" target="_blank" rel="noopener">School account guide <span class="ext">&#8599;</span></a>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <h3 class="accent">A 5 minute demo script</h3>
+          <div class="li"><span class="chk">1</span><span><b>Upload</b> two or three SAMHSA OUD guidance PDFs into a new notebook.</span></div>
+          <div class="li"><span class="chk">2</span><span><b>Ask</b> "Summarize this for a new peer support specialist in plain language."</span></div>
+          <div class="li"><span class="chk">3</span><span><b>Show citations.</b> Every answer points back to the exact source passage.</span></div>
+          <div class="li"><span class="chk">4</span><span><b>Generate an Audio Overview.</b> A podcast style recap the team can play in the car.</span></div>
+          <div class="li"><span class="chk">5</span><span><b>Land the point:</b> this is the distill step of the whole workflow, and it costs the school nothing.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 TOOL CARDS A -->
+  <section class="slide">
+    <div class="kicker">Tool by tool &middot; distill &amp; author</div>
+    <h2>The thinking tools</h2>
+    <div class="grid g2">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h3>Microsoft Copilot Chat</h3><span class="tag t-free">Free</span></div>
+        <p>Everyday assistant inside the protected UNR tenant. Draft, summarize, answer TA questions with enterprise data protection.</p>
+        <div style="margin-top:10px">Ease <span class="ease"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span></div>
+        <div class="foot" style="margin-top:8px">Cost <b class="tealx">$0</b> with M365 &middot; <a href="https://www.microsoft.com/en-us/education/products/copilot-in-education" target="_blank">Copilot in Education</a></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h3>NotebookLM Pro</h3><span class="tag t-free">Free via UNR email</span></div>
+        <p>Upload guidance and get grounded answers, citations, and audio overviews. The fastest way to distill dense OUD material into teachable points.</p>
+        <div style="margin-top:10px">Ease <span class="ease"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span></div>
+        <div class="foot" style="margin-top:8px">Cost <b class="tealx">$0</b> with university account &middot; <a href="https://notebooklm.google.com" target="_blank">Open NotebookLM</a></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h3>Claude (Cowork)</h3><span class="tag t-core">Core</span></div>
+        <p>Best fit for scripts, facilitator guides, curriculum outlines, and resource kit copy. Reads like a conversation, no prompting expertise needed.</p>
+        <div style="margin-top:10px">Ease <span class="ease"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot"></span></span></div>
+        <div class="foot" style="margin-top:8px">Cost <b class="tealx">$17 to $20</b> per user, month, annual &middot; <a href="https://claude.com/pricing" target="_blank">claude.com/pricing</a></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h3>Nano Banana</h3><span class="tag t-free">Included</span></div>
+        <p>Google's image model for custom infographic art and diagrams, available through the same education Google AI access as NotebookLM Pro.</p>
+        <div style="margin-top:10px">Ease <span class="ease"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot"></span></span></div>
+        <div class="foot" style="margin-top:8px">Cost <b class="tealx">$0</b> with education access &middot; API about $0.13 per image if ever needed</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 TOOL CARDS B -->
+  <section class="slide">
+    <div class="kicker">Tool by tool &middot; produce &amp; design</div>
+    <h2>The production tools</h2>
+    <div class="grid g3">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h3>Synthesia</h3><span class="tag t-core">Core</span></div>
+        <p>Paste a script, get a captioned presenter video with 80 plus language dubbing. Built for training, the easiest path to a finished module.</p>
+        <div style="margin-top:10px">Ease <span class="ease"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span></div>
+        <div class="foot" style="margin-top:8px">Free, then $18 or $64 per month annual &middot; <a href="https://www.synthesia.io/pricing" target="_blank">synthesia.io</a></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h3>Canva Pro</h3><span class="tag t-core">Core</span></div>
+        <p>Template driven infographics, one pagers, slides, and resource kits. The lowest learning curve design tool for a beginner team.</p>
+        <div style="margin-top:10px">Ease <span class="ease"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></span></div>
+        <div class="foot" style="margin-top:8px">About $120 per user, year &middot; education free tier is K-12 only &middot; <a href="https://www.canva.com/for-campus/" target="_blank">canva.com</a></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h3>Higgsfield</h3><span class="tag t-opt">Optional</span></div>
+        <p>Cinematic image and short video for intros, b roll, and social promos. One shared seat covers the whole team.</p>
+        <div style="margin-top:10px">Ease <span class="ease"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot"></span><span class="dot"></span></span></div>
+        <div class="foot" style="margin-top:8px">$19 / $47 / $99 per month annual &middot; <a href="https://higgsfield.ai/pricing" target="_blank">higgsfield.ai</a></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h3>Seedance</h3><span class="tag t-opt">Optional</span></div>
+        <p>Longer, higher quality AI video clips. Often reachable inside Higgsfield, so a separate seat may be unnecessary.</p>
+        <div style="margin-top:10px">Ease <span class="ease"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot"></span><span class="dot"></span></span></div>
+        <div class="foot" style="margin-top:8px">About $15 to $70 per month &middot; <a href="https://www.seedance.ai/pricing" target="_blank">seedance.ai</a></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center"><h3>Jasper</h3><span class="tag t-opt">Hold</span></div>
+        <p>Marketing content at scale. Overlaps with Copilot and Claude for a team this size. Revisit only if a dedicated marketing role appears.</p>
+        <div style="margin-top:10px">Ease <span class="ease"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot"></span><span class="dot"></span></span></div>
+        <div class="foot" style="margin-top:8px">$59 per seat, month annual &middot; <a href="https://www.jasper.ai/pricing" target="_blank">jasper.ai</a></div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;background:var(--tealsoft);border-color:var(--teal)">
+        <h3 class="tealx">Try the distill step now</h3>
+        <p style="margin:8px 0 14px">The demo takes five minutes and costs nothing.</p>
+        <a class="btn small" href="https://notebooklm.google.com" target="_blank" rel="noopener">Open NotebookLM <span class="ext">&#8599;</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 COST MODEL -->
+  <section class="slide">
+    <div class="kicker">Projected annual cost</div>
+    <h2>Three budgets, same studio</h2>
+    <p>Modeled for a team of 8 with a two to four person production core. Free tools, including NotebookLM Pro on university accounts, are shared by everyone. Paid seats go only to the people who build assets.</p>
+    <div class="grid g3" style="margin-top:6px">
+      <div class="costcol">
+        <h3>Lean</h3>
+        <div class="big">$972<span> / year</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Copilot Chat, NotebookLM Pro &middot; <b>$0</b></span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Claude Pro, 2 seats &middot; <b>$408</b></span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Synthesia Starter, 1 &middot; <b>$216</b></span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Canva Pro, 1 &middot; <b>$120</b></span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Higgsfield Starter, 1 &middot; <b>$228</b></span></div>
+      </div>
+      <div class="costcol reco">
+        <div class="badge">Recommended</div>
+        <h3>Balanced</h3>
+        <div class="big">$2,532<span> / year</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Copilot Chat, NotebookLM Pro &middot; <b>$0</b></span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Claude Team Cowork, 4 &middot; <b>$960</b></span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Synthesia Creator, 1 &middot; <b>$768</b></span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Canva Pro, 2 &middot; <b>$240</b></span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Higgsfield Plus, 1 shared &middot; <b>$564</b></span></div>
+      </div>
+      <div class="costcol">
+        <h3>Full</h3>
+        <div class="big">$6,300<span> / year</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>M365 Copilot, 3 &middot; <b>$648</b></span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Claude Team, 6 &middot; <b>$1,440</b></span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Synthesia Creator, 2 &middot; <b>$1,536</b></span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Canva 3, Higgsfield Ultra, Seedance, Jasper &middot; <b>$2,676</b></span></div>
+      </div>
+    </div>
+    <div class="flag good"><p><b>The Google line is $0.</b> NotebookLM Pro and Nano Banana come free with university Google accounts, verified with a UNR email in July 2026. Have each team member upgrade with their own university account, and note the entitlement in the tool register in case terms change at renewal time.</p></div>
+  </section>
+
+  <!-- 12 ROLLOUT -->
+  <section class="slide">
+    <div class="kicker">A calm 90 day rollout</div>
+    <h2>Do not turn everything on at once</h2>
+    <div class="grid g3">
+      <div class="card">
+        <h3 class="tealx">Days 1 to 30</h3>
+        <h4 style="margin:8px 0 4px">Free foundation</h4>
+        <div class="li"><span class="chk">&#10003;</span><span>Turn on Copilot Chat for everyone, run one 60 minute intro.</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Every team member claims free NotebookLM Pro with their university email.</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Build one module on NotebookLM plus Synthesia free.</span></div>
+      </div>
+      <div class="card">
+        <h3 class="tealx">Days 31 to 60</h3>
+        <h4 style="margin:8px 0 4px">Stand up the studio</h4>
+        <div class="li"><span class="chk">&#10003;</span><span>Buy the production core, Claude, Synthesia, Canva.</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Name a lead producer and a lead writer.</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Ship 3 to 5 finished modules.</span></div>
+      </div>
+      <div class="card">
+        <h3 class="tealx">Days 61 to 90</h3>
+        <h4 style="margin:8px 0 4px">Add reach, then review</h4>
+        <div class="li"><span class="chk">&#10003;</span><span>Add one shared Higgsfield seat for promos and b roll.</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Review what is used, cut what is not.</span></div>
+        <div class="li"><span class="chk">&#10003;</span><span>Lock the renewal number for next year.</span></div>
+      </div>
+    </div>
+    <div class="flag"><p>You can start near zero this quarter and only commit real dollars once the team has shipped assets. That is an easy story to tell a budget committee.</p></div>
+  </section>
+
+  <!-- 13 GOVERNANCE -->
+  <section class="slide">
+    <div class="kicker">Compliance checklist</div>
+    <h2>Keep it clean with OIT</h2>
+    <div class="grid g2">
+      <div class="li"><span class="chk">&#10003;</span><span><b>Run the OIT vendor risk assessment</b> for each paid tool before purchase. Build two weeks of lead time in.</span></div>
+      <div class="li"><span class="chk">&#10003;</span><span><b>Training content only.</b> No real patient records, case notes, or PHI in any consumer AI tool. HIPAA and 42 CFR Part 2 apply to OUD data.</span></div>
+      <div class="li"><span class="chk">&#10003;</span><span><b>Prefer tenant protected tools</b> for anything sensitive. Copilot inside M365 keeps data in your tenant.</span></div>
+      <div class="li"><span class="chk">&#10003;</span><span><b>Clinician review every asset.</b> AI drafts, a licensed reviewer approves, before anything reaches the field.</span></div>
+      <div class="li"><span class="chk">&#10003;</span><span><b>Buy under a department account,</b> not personal cards, so seats and renewals stay centrally managed.</span></div>
+      <div class="li"><span class="chk">&#10003;</span><span><b>Label AI generated media</b> and keep a one page tool register for next year's budget and audit.</span></div>
+    </div>
+    <div class="flag"><p>None of this is heavy. It is the difference between a studio that survives its first compliance review and one that gets switched off. Reference: <a href="https://www.unr.edu/oit/policies/artificial-intelligence-policy" target="_blank">UNR AI Usage Policy</a>.</p></div>
+  </section>
+
+  <!-- 14 NEXT STEPS -->
+  <section class="slide">
+    <div class="kicker">What to put in the budget line tomorrow</div>
+    <h2>The one line summary</h2>
+    <div class="card" style="margin-top:4px">
+      <table>
+        <thead><tr><th>Item</th><th>Seats</th><th>Annual</th></tr></thead>
+        <tbody>
+          <tr><td>Microsoft Copilot Chat</td><td>All staff</td><td class="num">$0</td></tr>
+          <tr><td>NotebookLM Pro, via university accounts</td><td>All staff</td><td class="num">$0</td></tr>
+          <tr><td>Claude (Cowork), Team seats</td><td>4</td><td class="num">$960</td></tr>
+          <tr><td>Synthesia Creator, training video</td><td>1</td><td class="num">$768</td></tr>
+          <tr><td>Canva Pro, design &amp; kits</td><td>2</td><td class="num">$240</td></tr>
+          <tr><td>Higgsfield Plus, shared motion</td><td>1</td><td class="num">$564</td></tr>
+          <tr class="total"><td>Recommended annual total</td><td></td><td class="num">$2,532</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:14px">Round to a clean <b class="lead">$2,600 line item</b>. Add a small <b class="lead">$500 training and contingency</b> buffer if the committee allows, and you have a defensible, conservative number under $3,100 all in.</p>
+    <div class="foot">Prepared by Bianca D. McCall, M.A. &middot; Consultation for UNR School of Public Health &middot; Pricing verified July 2026, confirm at purchase. Price sources on the next slide.</div>
+  </section>
+
+  <!-- 15 PRICE VERIFICATION APPENDIX -->
+  <section class="slide">
+    <div class="kicker">Appendix &middot; price verification</div>
+    <h2>Where every number comes from</h2>
+    <p>All rates are published list prices at annual billing, checked July 2026 against each vendor. Since this budget cannot be amended after submission, re-confirm each rate at the vendor link on the day of purchase.</p>
+    <div class="card" style="margin-top:4px">
+      <table>
+        <thead><tr><th>Line item</th><th>Rate basis</th><th>Math</th><th>Annual</th></tr></thead>
+        <tbody>
+          <tr><td><a href="https://www.microsoft.com/en-us/education/products/copilot-in-education" target="_blank">Copilot Chat</a></td><td>Included with UNR M365 A licenses</td><td>$0</td><td class="num">$0</td></tr>
+          <tr><td><a href="https://notebooklm.google.com" target="_blank">NotebookLM Pro</a></td><td>Free upgrade on university Google accounts, verified with UNR email</td><td>$0</td><td class="num">$0</td></tr>
+          <tr><td><a href="https://claude.com/pricing" target="_blank">Claude Team, standard seats</a></td><td>$20 per seat per month, annual billing</td><td>4 &times; $20 &times; 12</td><td class="num">$960</td></tr>
+          <tr><td><a href="https://www.synthesia.io/pricing" target="_blank">Synthesia Creator</a></td><td>$64 per month, annual billing, 360 video minutes per year</td><td>1 &times; $64 &times; 12</td><td class="num">$768</td></tr>
+          <tr><td><a href="https://www.canva.com/en/pricing/" target="_blank">Canva Pro</a></td><td>$120 per person per year, annual billing</td><td>2 &times; $120</td><td class="num">$240</td></tr>
+          <tr><td><a href="https://higgsfield.ai/pricing" target="_blank">Higgsfield Plus</a></td><td>$47 per month, annual billing, 1,200 credits per month</td><td>1 &times; $47 &times; 12</td><td class="num">$564</td></tr>
+          <tr class="total"><td>Recommended annual total</td><td></td><td></td><td class="num">$2,532</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="flag" style="margin-top:14px"><p><b>Caveats to disclose to the committee:</b> quoted rates require annual billing and exclude any tax. Monthly billing runs 15 to 38 percent higher. Synthesia Creator includes 360 minutes per year, enough for roughly 90 four minute modules. Seedance appears only in the Full scenario because its 2026 pricing is estimated, not yet officially published. The free NotebookLM Pro education entitlement should be noted in the tool register in case Google's terms change at renewal.</p></div>
+  </section>
+
+</div>
+
+<div id="nav">
+  <button class="navbtn" id="prev" aria-label="Previous">&#8249;</button>
+  <div id="dots"></div>
+  <button class="navbtn" id="next" aria-label="Next">&#8250;</button>
+</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  const dots=document.getElementById('dots');
+  const counter=document.getElementById('counter');
+  let i=0;
+  slides.forEach((s,idx)=>{const d=document.createElement('div');d.className='nd'+(idx===0?' on':'');d.onclick=()=>go(idx);dots.appendChild(d);});
+  const nds=[...dots.children];
+  function go(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,idx)=>s.classList.toggle('active',idx===i));
+    nds.forEach((d,idx)=>d.classList.toggle('on',idx===i));
+    counter.textContent=String(i+1).padStart(2,'0')+' / '+String(slides.length).padStart(2,'0');
+  }
+  document.getElementById('next').onclick=()=>go(i+1);
+  document.getElementById('prev').onclick=()=>go(i-1);
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ')go(i+1);
+    if(e.key==='ArrowLeft'||e.key==='PageUp')go(i-1);
+    if(e.key==='Home')go(0);if(e.key==='End')go(slides.length-1);
+  });
+  let sx=0;
+  document.addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
+  document.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>50)go(dx<0?i+1:i-1);},{passive:true});
+  counter.textContent='01 / '+String(slides.length).padStart(2,'0');
+</script>
+</body>
+</html>
